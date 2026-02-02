@@ -1,4 +1,4 @@
-const URL_JSON = "https://corsproxy.io/?" + encodeURIComponent(
+const URL_JSON = "https://api.allorigins.win/raw?url=" + encodeURIComponent(
   "http://bienstream.top/p2p/jogos/jogos-hoje.json"
 );
 
@@ -114,3 +114,4 @@ function render(grupos) {
     app.appendChild(section);
   });
 }
+
