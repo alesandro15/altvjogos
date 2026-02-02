@@ -1,4 +1,6 @@
-const URL_JSON = "http://bienstream.top/p2p/jogos/jogos-hoje.json";
+const URL_JSON = "https://corsproxy.io/?" + encodeURIComponent(
+  "http://bienstream.top/p2p/jogos/jogos-hoje.json"
+);
 
 /* MAPA DE AGRUPAMENTO */
 const MAPA_CAMPEONATOS = {
@@ -35,7 +37,7 @@ const PRIORIDADE = [
 fetch(URL_JSON)
   .then(res => res.json())
   .then(json => {
-    const jogos = json.data;
+    const jogos = json.data || [];
     const grupos = agruparJogos(jogos);
     render(grupos);
   })
@@ -48,8 +50,8 @@ function agruparJogos(jogos) {
   const grupos = {};
 
   jogos.forEach(jogo => {
-    const nomeLiga = jogo.liga || "OUTROS";
-    const grupo = MAPA_CAMPEONATOS[nomeLiga] || "OUTROS";
+    const liga = jogo.liga || "OUTROS";
+    const grupo = MAPA_CAMPEONATOS[liga] || "OUTROS";
 
     if (!grupos[grupo]) grupos[grupo] = [];
     grupos[grupo].push(jogo);
@@ -81,14 +83,22 @@ function render(grupos) {
       card.innerHTML = `
         <div class="times">
           <div class="time">
-            <img src="${jogo.Logo1}" alt="${jogo.Time}">
+            <img 
+              src="${jogo.Logo1}" 
+              alt="${jogo.Time}" 
+              onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'"
+            >
             <div>${jogo.Time}</div>
           </div>
 
           <div class="vs">x</div>
 
           <div class="time">
-            <img src="${jogo.Logo2}" alt="${jogo.Time2}">
+            <img 
+              src="${jogo.Logo2}" 
+              alt="${jogo.Time2}" 
+              onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'"
+            >
             <div>${jogo.Time2}</div>
           </div>
         </div>
