@@ -1,16 +1,18 @@
-const URL_JSON = "https://api.allorigins.win/raw?url=" + encodeURIComponent(
-  "http://bienstream.top/p2p/jogos/jogos-hoje.json"
-);
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`
+];
+
+const SOURCE_URL = "http://bienstream.top/p2p/jogos/jogos-hoje.json";
 
 /* MAPA DE AGRUPAMENTO */
 const MAPA_CAMPEONATOS = {
-  // Brasileirão
   "Brasileirão Série A": "BRASILEIRÃO",
   "Brasileirão Série B": "BRASILEIRÃO",
   "Brasileirão Série C": "BRASILEIRÃO",
   "Brasileirão Série D": "BRASILEIRÃO",
 
-  // Estaduais
   "Campeonato Paulista": "ESTADUAIS",
   "Paulistão": "ESTADUAIS",
   "Cariocão": "ESTADUAIS",
@@ -18,13 +20,11 @@ const MAPA_CAMPEONATOS = {
   "Campeonato Mineiro": "ESTADUAIS",
   "Campeonato Gaúcho": "ESTADUAIS",
 
-  // Copas
   "Copa do Brasil": "COPA DO BRASIL",
   "Libertadores": "LIBERTADORES",
   "Sul-Americana": "SUL-AMERICANA"
 };
 
-/* ORDEM DE PRIORIDADE */
 const PRIORIDADE = [
   "BRASILEIRÃO",
   "ESTADUAIS",
@@ -34,10 +34,20 @@ const PRIORIDADE = [
   "OUTROS"
 ];
 
-fetch(URL_JSON)
-  .then(res => res.json())
-  .then(json => {
-    const jogos = json.data || [];
+async function fetchComFallback(url) {
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url));
+      if (!res.ok) continue;
+      const json = await res.json();
+      if (json && json.data) return json.data;
+    } catch (e) {}
+  }
+  throw new Error("Nenhum proxy respondeu");
+}
+
+fetchComFallback(SOURCE_URL)
+  .then(jogos => {
     const grupos = agruparJogos(jogos);
     render(grupos);
   })
@@ -52,7 +62,6 @@ function agruparJogos(jogos) {
   jogos.forEach(jogo => {
     const liga = jogo.liga || "OUTROS";
     const grupo = MAPA_CAMPEONATOS[liga] || "OUTROS";
-
     if (!grupos[grupo]) grupos[grupo] = [];
     grupos[grupo].push(jogo);
   });
@@ -64,41 +73,32 @@ function render(grupos) {
   const app = document.getElementById("app");
   app.innerHTML = "";
 
-  PRIORIDADE.forEach(campeonato => {
-    if (!grupos[campeonato]) return;
+  PRIORIDADE.forEach(camp => {
+    if (!grupos[camp]) return;
 
     const section = document.createElement("section");
-    section.innerHTML = `<h2>${campeonato}</h2>`;
+    section.innerHTML = `<h2>${camp}</h2>`;
 
     const row = document.createElement("div");
     row.className = "row";
 
-    grupos[campeonato].forEach(jogo => {
-      const card = document.createElement("div");
-      card.className = "card";
-
+    grupos[camp].forEach(jogo => {
       const hora = new Date(jogo.datacompleta)
         .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+      const card = document.createElement("div");
+      card.className = "card";
       card.innerHTML = `
         <div class="times">
           <div class="time">
-            <img 
-              src="${jogo.Logo1}" 
-              alt="${jogo.Time}" 
-              onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'"
-            >
+            <img src="${jogo.Logo1}" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'">
             <div>${jogo.Time}</div>
           </div>
 
           <div class="vs">x</div>
 
           <div class="time">
-            <img 
-              src="${jogo.Logo2}" 
-              alt="${jogo.Time2}" 
-              onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'"
-            >
+            <img src="${jogo.Logo2}" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'">
             <div>${jogo.Time2}</div>
           </div>
         </div>
@@ -106,7 +106,6 @@ function render(grupos) {
         <div class="hora">${hora}</div>
         <div class="canal">${jogo.canal || ""}</div>
       `;
-
       row.appendChild(card);
     });
 
@@ -114,4 +113,3 @@ function render(grupos) {
     app.appendChild(section);
   });
 }
-
