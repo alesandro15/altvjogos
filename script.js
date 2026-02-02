@@ -1,3 +1,4 @@
+/* ================= PROXIES ================= */
 const PROXIES = [
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
@@ -6,7 +7,7 @@ const PROXIES = [
 
 const SOURCE_URL = "http://bienstream.top/p2p/jogos/jogos-hoje.json";
 
-/* MAPA DE AGRUPAMENTO */
+/* ================= MAPA DE CAMPEONATOS ================= */
 const MAPA_CAMPEONATOS = {
   "Brasileirão Série A": "BRASILEIRÃO",
   "Brasileirão Série B": "BRASILEIRÃO",
@@ -34,6 +35,7 @@ const PRIORIDADE = [
   "OUTROS"
 ];
 
+/* ================= FETCH COM FALLBACK ================= */
 async function fetchComFallback(url) {
   for (const proxy of PROXIES) {
     try {
@@ -46,6 +48,7 @@ async function fetchComFallback(url) {
   throw new Error("Nenhum proxy respondeu");
 }
 
+/* ================= INICIO ================= */
 fetchComFallback(SOURCE_URL)
   .then(jogos => {
     const grupos = agruparJogos(jogos);
@@ -56,16 +59,15 @@ fetchComFallback(SOURCE_URL)
       "<p class='loading'>Erro ao carregar jogos</p>";
   });
 
+/* ================= FUNÇÕES ================= */
 function agruparJogos(jogos) {
   const grupos = {};
-
   jogos.forEach(jogo => {
     const liga = jogo.liga || "OUTROS";
     const grupo = MAPA_CAMPEONATOS[liga] || "OUTROS";
     if (!grupos[grupo]) grupos[grupo] = [];
     grupos[grupo].push(jogo);
   });
-
   return grupos;
 }
 
@@ -86,19 +88,27 @@ function render(grupos) {
       const hora = new Date(jogo.datacompleta)
         .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+      const logoPadrao =
+        "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
+
+      const logo1 =
+        jogo.Logo1 && jogo.Logo1.startsWith("http") ? jogo.Logo1 : logoPadrao;
+      const logo2 =
+        jogo.Logo2 && jogo.Logo2.startsWith("http") ? jogo.Logo2 : logoPadrao;
+
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
         <div class="times">
           <div class="time">
-            <img src="${jogo.Logo1}" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'">
+            <img src="${logo1}">
             <div>${jogo.Time}</div>
           </div>
 
           <div class="vs">x</div>
 
           <div class="time">
-            <img src="${jogo.Logo2}" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'">
+            <img src="${logo2}">
             <div>${jogo.Time2}</div>
           </div>
         </div>
@@ -106,6 +116,7 @@ function render(grupos) {
         <div class="hora">${hora}</div>
         <div class="canal">${jogo.canal || ""}</div>
       `;
+
       row.appendChild(card);
     });
 
